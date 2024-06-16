@@ -1,0 +1,6 @@
+.DS_Store
+.data
+.internal
+dist
+components
+node_modules

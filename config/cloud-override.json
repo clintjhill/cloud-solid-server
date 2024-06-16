@@ -1,0 +1,67 @@
+{
+  "@context": [
+    "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^7.0.0/components/context.jsonld",
+    "https://linkedsoftwaredependencies.org/bundles/npm/blob-data-accessor/^1.0.0/components/context.jsonld"
+  ],
+  "@graph": [
+    {
+      "comment": "A Cloud storage data accessor.",
+      "@id": "urn:solid-server:default:ResourceStore_Backend",
+      "@type": "DataAccessorBasedStore",
+      "identifierStrategy": {
+        "@id": "urn:solid-server:default:IdentifierStrategy"
+      },
+      "auxiliaryStrategy": {
+        "@id": "urn:solid-server:default:AuxiliaryStrategy"
+      },
+      "accessor": {
+        "@id": "urn:blob-data-accessor:CloudDataAccessor"
+      },
+      "metadataStrategy": {
+        "@id": "urn:solid-server:default:MetadataStrategy"
+      }
+    },
+    {
+      "comment": "Stores data in the Cloud.",
+      "@id": "urn:blob-data-accessor:CloudDataAccessor",
+      "@type": "CloudDataAccessor",
+      "resourceMapper": {
+        "@id": "urn:blob-data-accessor:CloudExtensionBasedMapper"
+      },
+      "rootFilepath": {
+        "@id": "urn:solid-server:default:variable:rootFilePath"
+      }
+    },
+    {
+      "comment": "Cloud Extension Manager.",
+      "@id": "urn:blob-data-accessor:CloudExtensionBasedMapper",
+      "@type": "CloudExtensionBasedMapper",
+      "baseUrl": {
+        "@id": "urn:solid-server:default:variable:baseUrl"
+      },
+      "rootFilepath": {
+        "@id": "urn:solid-server:default:variable:rootFilePath"
+      }
+    },
+    {
+      "@type": "Override",
+      "overrideInstance": {
+        "@id": "urn:solid-server:default:TemplatedResourcesGenerator"
+      },
+      "overrideSteps": [
+        {
+          "@type": "OverrideParameters",
+          "overrideValue": {
+            "@type": "SubfolderResourcesGenerator",
+            "resourcesGenerator": {
+              "@type": "BaseResourcesGenerator",
+              "factory": {
+                "@type": "CloudExtensionBasedMapperFactory"
+              },
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
