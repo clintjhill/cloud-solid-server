@@ -3,7 +3,7 @@ import { createReadStream } from "fs";
 import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 import { CloudExtensionBasedMapper } from "../src/CloudExtensionBasedMapper";
-import { DC, LDP, NotFoundHttpError, POSIX, RDF, RedirectingErrorHandler, Representation, RepresentationConverter, RepresentationMetadata, SOLID_META, UnsupportedMediaTypeHttpError, XSD, toLiteral } from "@solid/community-server";
+import { DC, LDP, NotFoundHttpError, POSIX, RDF, RepresentationMetadata, SOLID_META, XSD, toLiteral } from "@solid/community-server";
 import { base, rootFilePath } from "./config";
 
 let mapper = new CloudExtensionBasedMapper(base, rootFilePath);
