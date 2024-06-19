@@ -1,6 +1,6 @@
 import type { Readable } from 'node:stream';
 import type { Quad } from '@rdfjs/types';
-import { CONTENT_TYPE_TERM, DC, DataAccessor, Guarded, LDP, NotFoundHttpError, NotImplementedHttpError, POSIX, RDF, Representation, RepresentationMetadata, ResourceIdentifier, ResourceLink, SOLID_META, UnsupportedMediaTypeHttpError, XSD, addResourceMetadata, getLoggerFor, guardStream, isContainerIdentifier, isContainerPath, parseQuads, serializeQuads, toLiteral, updateModifiedDate } from '@solid/community-server';
+import { CONTENT_TYPE_TERM, DC, DataAccessor, Guarded, IANA, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, ResourceIdentifier, ResourceLink, SOLID_META, UnsupportedMediaTypeHttpError, XSD, addResourceMetadata, getLoggerFor, guardStream, isContainerIdentifier, isContainerPath, parseContentType, parseQuads, serializeQuads, toLiteral, toNamedTerm, updateModifiedDate } from '@solid/community-server';
 import { CloudBlobClient, CloudBlobStat } from './CloudBlobClient';
 import { CloudExtensionBasedMapper } from './CloudExtensionBasedMapper';
 
@@ -61,10 +61,61 @@ export class CloudDataAccessor implements DataAccessor {
   }
 
   public async* getChildren(identifier: ResourceIdentifier): AsyncIterableIterator<RepresentationMetadata> {
-    // const link = await this.resourceMapper.mapUrlToFilePath(identifier, false);
-    // yield* this.getChildMetadata(link);
-    this.logger.error(`Get Children Not Implemented: ${identifier.path}.`);
-    throw new NotImplementedHttpError("Get Children not implemented.");
+    const link = await this.resourceMapper.mapUrlToFilePath(identifier, false);
+    yield* this.getChildMetadata(link);
+  }
+
+  /**
+   * Generate metadata for all children in a container.
+   *
+   * @param link - Path related metadata.
+   */
+  private async* getChildMetadata(link: ResourceLink): AsyncIterableIterator<RepresentationMetadata> {
+    const dir = await this.blobClient.list(link.filePath);
+    // For every child in the container we want to generate specific metadata
+    for await (const entry of dir) {
+      // Obtain details of the entry, resolving any symbolic links
+      // const childPath = joinFilePath(link.filePath, entry.name);
+      let childStats;
+      try {
+        childStats = await this.blobClient.stats(entry);
+      } catch (e) {
+        // Skip this entry if details could not be retrieved (e.g., bad symbolic link)
+        continue;
+      }
+
+      // Ignore non-file/directory entries in the folder
+      // if (!childStats.isFile() && !childStats.isDirectory()) {
+      //   continue;
+      // }
+
+      // Generate the URI corresponding to the child resource
+      const childLink = await this.resourceMapper.mapFilePathToUrl(entry, childStats.container);
+
+      // Hide metadata files
+      if (childLink.isMetadata) {
+        continue;
+      }
+
+      // Generate metadata of this specific child as described in
+      // https://solidproject.org/TR/2021/protocol-20211217#contained-resource-metadata
+      const metadata = new RepresentationMetadata(childLink.identifier);
+      addResourceMetadata(metadata, childStats.container);
+      this.addPosixMetadata(metadata, childStats);
+      // Containers will not have a content-type
+      const { contentType, identifier } = childLink;
+      if (contentType) {
+        // Make sure we don't generate invalid URIs
+        try {
+          const { value } = parseContentType(contentType);
+          metadata.add(RDF.terms.type, toNamedTerm(`${IANA.namespace}${value}#Resource`));
+        } catch {
+          this.logger.warn(`Detected an invalid content-type "${contentType}" for ${identifier.path}`);
+        }
+      }
+
+      yield metadata;
+    }
   }
 
   /**

@@ -1,5 +1,5 @@
 import * as mime from 'mime-types';
-import { BaseFileIdentifierMapper, DEFAULT_CUSTOM_TYPES, FileIdentifierMapperFactory, NotImplementedHttpError, ResourceIdentifier, ResourceLink, getExtension } from '@solid/community-server';
+import { BaseFileIdentifierMapper, DEFAULT_CUSTOM_TYPES, FileIdentifierMapperFactory, NotImplementedHttpError, ResourceIdentifier, ResourceLink, encodeUriPathComponents, ensureTrailingSlash, getExtension, trimTrailingSlashes } from '@solid/community-server';
 import { CloudBlobClient } from './CloudBlobClient';
 
 /**
@@ -34,16 +34,7 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
     }
   }
 
-  public getBaseUrl() {
-    return this.baseRequestURI;
-  }
-
-  public getRootFilepath() {
-    return this.rootFilepath;
-  }
-
-  protected async mapUrlToDocumentPath(identifier: ResourceIdentifier, filePath: string, contentType?: string):
-    Promise<ResourceLink> {
+  protected async mapUrlToDocumentPath(identifier: ResourceIdentifier, filePath: string, contentType?: string): Promise<ResourceLink> {
     // Would conflict with how new extensions are stored
     if (/\$\.\w+$/u.test(filePath)) {
       this.logger.warn(`Identifier ${identifier.path} contains a dollar sign before its extension`);
@@ -84,10 +75,6 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
     return super.mapUrlToDocumentPath(identifier, filePath, contentType);
   }
 
-  protected async getDocumentUrl(relative: string): Promise<string> {
-    return super.getDocumentUrl(this.stripExtension(relative));
-  }
-
   protected async getContentTypeFromPath(filePath: string): Promise<string> {
     const extension = getExtension(filePath).toLowerCase();
     return mime.lookup(extension) ||
@@ -95,10 +82,39 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
       await super.getContentTypeFromPath(filePath);
   }
 
-  /**
-   * Helper function that removes the internal extension, one starting with $., from the given path.
-   * Nothing happens if no such extension is present.
-   */
+  public async mapFilePathToUrl(filePath: string, isContainer: boolean): Promise<ResourceLink> {
+    //TODO: Debatable this is necessary - we consider the rootFilepath as the bucket.
+    // if (!filePath.startsWith(this.rootFilepath)) {
+    //   this.logger.error(`Trying to access file ${filePath} outside of ${this.rootFilepath}`);
+    //   throw new InternalServerError(`File ${filePath} is not part of the file storage at ${this.rootFilepath}`);
+    // }
+    // const relative = filePath.slice(this.rootFilepath.length);
+    let url: string;
+    let contentType: string | undefined;
+
+    if (isContainer) {
+      url = await this.getContainerUrl(filePath);
+      this.logger.debug(`Container filepath ${filePath} maps to URL ${url}`);
+    } else {
+      url = await this.getDocumentUrl(filePath);
+      this.logger.debug(`Document ${filePath} maps to URL ${url}`);
+      contentType = await this.getContentTypeFromPath(filePath);
+    }
+    const isMetadata = this.isMetadataPath(filePath);
+    if (isMetadata) {
+      url = url.slice(0, -".meta".length);
+    }
+    return { identifier: { path: url }, filePath, contentType, isMetadata };
+  }
+
+  protected async getContainerUrl(relative: string): Promise<string> {
+    return ensureTrailingSlash(this.baseRequestURI + this.rootFilepath + encodeUriPathComponents(relative));
+  }
+
+  protected async getDocumentUrl(relative: string): Promise<string> {
+    return trimTrailingSlashes(this.baseRequestURI + this.rootFilepath + encodeUriPathComponents(this.stripExtension(relative)));
+  }
+
   protected stripExtension(path: string): string {
     const extension = getExtension(path);
     if (extension && path.endsWith(`$.${extension}`)) {

@@ -70,8 +70,19 @@ test("Generates metadata for container child resources.", async (t: Test) => {
     children.push(child);
   }
 
-  t.equal(children.length, 2, "Resource and it's meta file.");
+  t.equal(children.length, 1, "Resource and it's meta file.");
 });
+      // cache.data = {
+      //   container: {
+      //     resource: 'data',
+      //     'resource.meta': 'metadata',
+      //     symlink: Symbol(`${rootFilePath}/container/resource`),
+      //     symlinkContainer: Symbol(`${rootFilePath}/container/container2`),
+      //     symlinkInvalid: Symbol(`${rootFilePath}/invalid`),
+      //     notAFile: 5,
+      //     container2: {},
+      //   },
+      // };
 
 
 

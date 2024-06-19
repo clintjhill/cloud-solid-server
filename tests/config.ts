@@ -1,5 +1,5 @@
 
-let base = "http://test.com/";
+let base = "http://localhost:9001/";
 let rootFilePath = "test-data";
 
 export { base, rootFilePath };
