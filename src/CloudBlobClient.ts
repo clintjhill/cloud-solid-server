@@ -127,6 +127,7 @@ export class CloudBlobClient {
         let items: string[] = [];
         let dir: BucketStream<BucketItem> = this.client.listObjectsV2(this.bucket, path);
         dir.on('data', (bi) => {
+          if (bi.prefix) items.push(bi.prefix);
           if (bi.name && bi.name != this.containerFileName(path)) items.push(bi.name);
         });
         dir.on('end', () => { res(items); });
