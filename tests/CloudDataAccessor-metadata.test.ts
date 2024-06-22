@@ -60,31 +60,36 @@ test("Generates the metadata for a container.", async (t: Test) => {
 });
 
 test("Generates metadata for container child resources.", async (t: Test) => {
+  let data = guardStream(Readable.from(["data"]));
+
   let container = { path: `${base}cloud-data-accessor/container/` };
   await accessor.writeContainer(container, new RepresentationMetadata(container));
+
+  let extraFile = { path: `${base}cloud-data-accessor/container/extraFile` };
+  await accessor.writeDocument(extraFile, data, new RepresentationMetadata(extraFile));
+
   let resource = { path: `${base}cloud-data-accessor/container/resource` };
-  await accessor.writeDocument(resource, guardStream(Readable.from(["data"])), new RepresentationMetadata(resource));
+  await accessor.writeDocument(resource, data, new RepresentationMetadata(resource));
+
+  let internalContainerOne = { path: `${base}cloud-data-accessor/container/internalContainerOne/` };
+  await accessor.writeContainer(internalContainerOne, new RepresentationMetadata(internalContainerOne));
+
+  let shouldNotSeeMe = { path: `${base}cloud-data-accessor/container/internalContainerOne/shouldNotSeeMe` };
+  await accessor.writeDocument(shouldNotSeeMe, data, new RepresentationMetadata(shouldNotSeeMe));
+
+  let internalContainerTwo = { path: `${base}cloud-data-accessor/container/internalContainerTwo/` };
+  await accessor.writeContainer(internalContainerTwo, new RepresentationMetadata(internalContainerTwo));
+
+  let shouldNotSeeMeEither = { path: `${base}cloud-data-accessor/container/internalContainerTwo/shouldNotSeeMeEither` };
+  await accessor.writeDocument(shouldNotSeeMeEither, data, new RepresentationMetadata(shouldNotSeeMeEither));
 
   const children: RepresentationMetadata[] = [];
   for await (const child of accessor.getChildren(container)) {
     children.push(child);
   }
 
-  t.equal(children.length, 1, "Resource and it's meta file.");
+  t.equal(children.length, 4, "Resource and it's meta file.");
 });
-      // cache.data = {
-      //   container: {
-      //     resource: 'data',
-      //     'resource.meta': 'metadata',
-      //     symlink: Symbol(`${rootFilePath}/container/resource`),
-      //     symlinkContainer: Symbol(`${rootFilePath}/container/container2`),
-      //     symlinkInvalid: Symbol(`${rootFilePath}/invalid`),
-      //     notAFile: 5,
-      //     container2: {},
-      //   },
-      // };
-
-
 
 // it('generates metadata for container child resources.', async(): Promise<void> => {
 //   cache.data = {

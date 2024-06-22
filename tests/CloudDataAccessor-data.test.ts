@@ -1,9 +1,10 @@
 import test, { Test } from "tape-promise/tape";
+import { Readable } from "stream";
 import { createReadStream } from "fs";
 import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 import { CloudExtensionBasedMapper } from "../src/CloudExtensionBasedMapper";
-import { NotFoundHttpError, Representation, UnsupportedMediaTypeHttpError } from "@solid/community-server";
+import { NotFoundHttpError, Representation, RepresentationMetadata, UnsupportedMediaTypeHttpError, guardStream } from "@solid/community-server";
 import { base, rootFilePath } from "./config";
 
 let mapper = new CloudExtensionBasedMapper(base, rootFilePath);
@@ -48,3 +49,19 @@ test("Returns the corresponding data.", async (t: Test) => {
   t.end();
 });
 
+test("Writing document.", async (t: Test) => {
+  let data = guardStream(Readable.from(["data"]));
+  let dataX = guardStream(Readable.from(["data"]));
+
+  let firstFile = { path: `${base}cloud-data-accessor/container/firstFile` };
+  await accessor.writeDocument(firstFile, data, new RepresentationMetadata(firstFile));
+  let firstData = await client.read("cloud-data-accessor/container/firstFile");
+  t.ok(firstData, "Read back.");
+  firstData.destroy();
+
+  let extraFile = { path: `${base}cloud-data-accessor/container/extraFile` };
+  await accessor.writeDocument(extraFile, dataX, new RepresentationMetadata(extraFile));
+  let extraData = await client.read("cloud-data-accessor/container/extraFile");
+  t.ok(extraData, "Read back.");
+  extraData.destroy();
+});
