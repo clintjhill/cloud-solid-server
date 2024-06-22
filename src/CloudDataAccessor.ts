@@ -129,6 +129,7 @@ export class CloudDataAccessor implements DataAccessor {
     // Check if we already have a corresponding file with a different extension
     await this.verifyExistingExtension(link);
 
+    //TODO: Move this to post-write to avoid unecessary write/delete in this logic path
     const wroteMetadata = await this.writeMetadataFile(link, metadata);
 
     try {
