@@ -108,11 +108,11 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   }
 
   protected async getContainerUrl(relative: string): Promise<string> {
-    return ensureTrailingSlash(this.baseRequestURI + this.rootFilepath + encodeUriPathComponents(relative));
+    return ensureTrailingSlash(this.baseRequestURI + "/" + encodeUriPathComponents(relative));
   }
 
   protected async getDocumentUrl(relative: string): Promise<string> {
-    return trimTrailingSlashes(this.baseRequestURI + this.rootFilepath + encodeUriPathComponents(this.stripExtension(relative)));
+    return trimTrailingSlashes(this.baseRequestURI + "/" + encodeUriPathComponents(this.stripExtension(relative)));
   }
 
   protected stripExtension(path: string): string {

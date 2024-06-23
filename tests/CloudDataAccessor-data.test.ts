@@ -53,15 +53,15 @@ test("Writing document.", async (t: Test) => {
   let data = guardStream(Readable.from(["data"]));
   let dataX = guardStream(Readable.from(["data"]));
 
-  let firstFile = { path: `${base}cloud-data-accessor/container/firstFile` };
+  let firstFile = { path: `${base}cloud-data-accessor/writes/firstFile` };
   await accessor.writeDocument(firstFile, data, new RepresentationMetadata(firstFile));
-  let firstData = await client.read("cloud-data-accessor/container/firstFile");
+  let firstData = await client.read("cloud-data-accessor/writes/firstFile");
   t.ok(firstData, "Read back.");
   firstData.destroy();
 
-  let extraFile = { path: `${base}cloud-data-accessor/container/extraFile` };
+  let extraFile = { path: `${base}cloud-data-accessor/writes/extraFile` };
   await accessor.writeDocument(extraFile, dataX, new RepresentationMetadata(extraFile));
-  let extraData = await client.read("cloud-data-accessor/container/extraFile");
+  let extraData = await client.read("cloud-data-accessor/writes/extraFile");
   t.ok(extraData, "Read back.");
   extraData.destroy();
 });
