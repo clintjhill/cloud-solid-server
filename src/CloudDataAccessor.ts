@@ -13,9 +13,10 @@ export class CloudDataAccessor implements DataAccessor {
   protected readonly resourceMapper: CloudExtensionBasedMapper;
   protected readonly blobClient: CloudBlobClient;
 
-  public constructor(resourceMapper: CloudExtensionBasedMapper, rootFilePath: string) {
+  public constructor(resourceMapper: CloudExtensionBasedMapper, rootFilepath: string) {
     this.resourceMapper = resourceMapper;
-    this.blobClient = new CloudBlobClient(rootFilePath);
+    let bucket = rootFilepath.split("/").pop() || "data";
+    this.blobClient = new CloudBlobClient(bucket);
   }
 
   /**

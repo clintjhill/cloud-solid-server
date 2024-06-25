@@ -13,13 +13,10 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   private readonly customExtensions: Record<string, string>;
   private readonly blobClient: CloudBlobClient;
 
-  public constructor(
-    baseUrl: string,
-    rootFilepath: string,
-    customTypes?: Record<string, string>
-  ) {
+  public constructor(baseUrl: string, rootFilepath: string, customTypes?: Record<string, string>) {
     super(baseUrl, "");
-    this.blobClient = new CloudBlobClient(rootFilepath);
+    let bucket = rootFilepath.split("/").pop() || "data";
+    this.blobClient = new CloudBlobClient(bucket);
 
     // Workaround for https://github.com/LinkedSoftwareDependencies/Components.js/issues/20
     if (!customTypes || Object.keys(customTypes).length === 0) {
