@@ -47,7 +47,7 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
       try {
         const files = await this.blobClient.list(folder);
         fileName = files.find((file): boolean => {
-          let starts = file.startsWith(folder+documentName);
+          let starts = file.startsWith(folder + documentName);
           let ext = /(?:\$\..+)?$/u.test(file.slice(documentName.length));
           return starts && ext;
         });
