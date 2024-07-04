@@ -29,13 +29,13 @@ test("throws 400 if the input path contains relative parts.", async (t: Test) =>
 });
 
 test("returns the corresponding file path for container identifiers.", async (t: Test) => {
-  let containerIdentifier = await mapper.mapUrlToFilePath({ path: `${base}container/` }, false);
+  let actual = await mapper.mapUrlToFilePath({ path: `${base}container/` }, false);
   let expected = {
     identifier: { path: `${base}container/` },
     filePath: `${internalRootFilepath}container/`,
     isMetadata: false
   };
-  t.deepEqual(containerIdentifier, expected, "Container Identifier.");
+  t.deepEqual(actual, expected, "Container Identifier.");
   t.end();
 });
 
@@ -47,25 +47,25 @@ test("rejects URLs that end with '$.{extension}'.", async (t: Test) => {
 });
 
 test("determines content-type by extension when looking in a folder that does not exist.", async (t: Test) => {
-  let contentType = await mapper.mapUrlToFilePath({ path: `${base}not-exist/test.txt` }, false);
+  let actual = await mapper.mapUrlToFilePath({ path: `${base}not-exist/test.txt` }, false);
   let expected = {
     identifier: { path: `${base}not-exist/test.txt` },
     filePath: `${internalRootFilepath}not-exist/test.txt`,
     contentType: 'text/plain',
     isMetadata: false
   };
-  t.deepEqual(contentType, expected, "Text plain Content-Type.");
+  t.deepEqual(actual, expected, "Text plain Content-Type.");
 });
 
 test("determines content-type by extension when looking for a file that does not exist.", async (t: Test) => {
-  let contentType = await mapper.mapUrlToFilePath({ path: `${base}not-exist.txt` }, false);
+  let actual = await mapper.mapUrlToFilePath({ path: `${base}not-exist.txt` }, false);
   let expected = {
     identifier: { path: `${base}not-exist.txt` },
     filePath: `${internalRootFilepath}not-exist.txt`,
     contentType: 'text/plain',
     isMetadata: false
   };
-  t.deepEqual(contentType, expected, "Text plain Content-Type.");
+  t.deepEqual(actual, expected, "Text plain Content-Type.");
 });
 
 test("determines the content-type based on the extension.", async (t: Test) => {
@@ -92,4 +92,28 @@ test("determines the content-type correctly for metadata files.", async (t: Test
     isMetadata: true
   };
   t.deepEqual(actual, expected, "Turtle Content-Type.");
+});
+
+test("matches even if the content-type does not match the extension.", async (t: Test) => {
+  let metaFile = createReadStream("./tests/fixtures/test.meta");
+  await client.write("root/cloud-extension-mapper/test.txt$.ttl", metaFile);
+  let actual = await mapper.mapUrlToFilePath({ path: `${base}cloud-extension-mapper/test.txt` }, false);
+  let expected = {
+    identifier: { path: `${base}cloud-extension-mapper/test.txt` },
+    filePath: `${internalRootFilepath}cloud-extension-mapper/test.txt$.ttl`,
+    contentType: 'text/turtle',
+    isMetadata: false
+  };
+  t.deepEqual(actual, expected, "Match Content-Type even with wrong extension.");
+});
+
+test("generates a file path if the content-type was provided.", async (t: Test) => {
+  let actual = await mapper.mapUrlToFilePath({ path: `${base}test.txt`}, false, 'text/plain');
+  let expected = {
+    identifier: { path: `${base}test.txt` },
+    filePath: `${internalRootFilepath}test.txt`,
+    contentType: 'text/plain',
+    isMetadata: false
+  };
+  t.deepEqual(actual, expected, "File path with content-type.");
 });
