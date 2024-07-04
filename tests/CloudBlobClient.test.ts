@@ -1,13 +1,14 @@
 import test, { Test } from "tape";
 import { createReadStream } from "fs";
 import { CloudBlobClient } from "../src/CloudBlobClient";
-import { rootFilePath } from "./config";
+import { rootFilepath } from "./config";
+import { RepresentationMetadata } from "@solid/community-server";
 
-const client = new CloudBlobClient(rootFilePath);
+const client = new CloudBlobClient(rootFilepath);
 let plainTextContent = createReadStream("./tests/fixtures/plain.txt");
 let plainTextFilename = "cloud-blob-client/plain.txt";
 let fixtures = [
-  { name: "cloud-blob-client/.meta", path: "./tests/fixtures/.meta" },
+  { name: "cloud-blob-client/.__container", path: "./tests/fixtures/.__container" },
   { name: "cloud-blob-client/plain.css", path: "./tests/fixtures/plain.css" },
   { name: "cloud-blob-client/plain.html", path: "./tests/fixtures/plain.html" },
   { name: "cloud-blob-client/plain.js", path: "./tests/fixtures/plain.js" },
@@ -16,7 +17,8 @@ let fixtures = [
 ];
 
 test("Write container to storage.", async (t: Test) => {
-  let written = await client.writeContainer("cloud-blob-client/");
+  let metadata = new RepresentationMetadata();
+  let written = await client.writeContainer("cloud-blob-client/", metadata);
   t.ok(written, "Wrote container cloud-blob-client/.");
   t.end();
 });

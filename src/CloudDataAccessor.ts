@@ -15,8 +15,7 @@ export class CloudDataAccessor implements DataAccessor {
 
   public constructor(resourceMapper: CloudExtensionBasedMapper, rootFilepath: string) {
     this.resourceMapper = resourceMapper;
-    let bucket = rootFilepath.split("/").pop() || "data";
-    this.blobClient = new CloudBlobClient(bucket);
+    this.blobClient = new CloudBlobClient(rootFilepath);
   }
 
   /**
@@ -150,7 +149,7 @@ export class CloudDataAccessor implements DataAccessor {
    */
   public async writeContainer(identifier: ResourceIdentifier, metadata: RepresentationMetadata): Promise<void> {
     const link = await this.resourceMapper.mapUrlToFilePath(identifier, false);
-    let written = await this.blobClient.writeContainer(link.filePath);
+    let written = await this.blobClient.writeContainer(link.filePath, metadata);
     if (written) {
       await this.writeMetadataFile(link, metadata);
     }
@@ -233,7 +232,7 @@ export class CloudDataAccessor implements DataAccessor {
     let wroteMetadata: boolean;
 
     // Write metadata to file if there are quads remaining
-    if (quads.length > 0 || isContainerPath(link.filePath)) {
+    if (quads.length > 0) {
       // Determine required content-type based on mapper
       const serializedMetadata = serializeQuads(quads, metadataLink.contentType);
       await this.blobClient.write(metadataLink.filePath, serializedMetadata);

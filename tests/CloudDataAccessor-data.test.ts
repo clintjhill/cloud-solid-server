@@ -5,11 +5,11 @@ import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 import { CloudExtensionBasedMapper } from "../src/CloudExtensionBasedMapper";
 import { NotFoundHttpError, Representation, RepresentationMetadata, UnsupportedMediaTypeHttpError, guardStream } from "@solid/community-server";
-import { base, rootFilePath } from "./config";
+import { base, rootFilepath } from "./config";
 
-let mapper = new CloudExtensionBasedMapper(base, rootFilePath);
-let client = new CloudBlobClient(rootFilePath);
-let accessor = new CloudDataAccessor(mapper, rootFilePath);
+let mapper = new CloudExtensionBasedMapper(base, rootFilepath);
+let client = new CloudBlobClient(rootFilepath);
+let accessor = new CloudDataAccessor(mapper, rootFilepath);
 
 test("Handles Binary data only", async (t: Test) => {
   let handles = async () => { await accessor.canHandle({ binary: true } as Representation); }
@@ -42,7 +42,7 @@ test("Throws 404 if identifier matches a directory.", async (t: Test) => {
 
 test("Returns the corresponding data.", async (t: Test) => {
   let plainText = createReadStream("./tests/fixtures/plain.txt");
-  await client.write("cloud-data-accessor/plain.txt", plainText);
+  await client.write("root/cloud-data-accessor/plain.txt", plainText);
   let stream = await accessor.getData({ path: `${base}cloud-data-accessor/plain.txt` });
   t.ok(stream);
   stream.destroy();
@@ -55,13 +55,13 @@ test("Writing document.", async (t: Test) => {
 
   let firstFile = { path: `${base}cloud-data-accessor/writes/firstFile` };
   await accessor.writeDocument(firstFile, data, new RepresentationMetadata(firstFile));
-  let firstData = await client.read("cloud-data-accessor/writes/firstFile");
+  let firstData = await client.read(`root/cloud-data-accessor/writes/firstFile`);
   t.ok(firstData, "Read back.");
   firstData.destroy();
 
   let extraFile = { path: `${base}cloud-data-accessor/writes/extraFile` };
   await accessor.writeDocument(extraFile, dataX, new RepresentationMetadata(extraFile));
-  let extraData = await client.read("cloud-data-accessor/writes/extraFile");
+  let extraData = await client.read(`root/cloud-data-accessor/writes/extraFile`);
   t.ok(extraData, "Read back.");
   extraData.destroy();
 });

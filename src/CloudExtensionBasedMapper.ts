@@ -14,9 +14,10 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   private readonly blobClient: CloudBlobClient;
 
   public constructor(baseUrl: string, rootFilepath: string, customTypes?: Record<string, string>) {
-    super(baseUrl, "");
-    let bucket = rootFilepath.split("/").pop() || "data";
-    this.blobClient = new CloudBlobClient(bucket);
+    // We abstract the rootFilepath because we intend to use it instead as a bucket name. 
+    // This makes the rootFilepath of the bucket "root", and maintains functionality of original community-server.
+    super(baseUrl, "root");
+    this.blobClient = new CloudBlobClient(rootFilepath);
 
     // Workaround for https://github.com/LinkedSoftwareDependencies/Components.js/issues/20
     if (!customTypes || Object.keys(customTypes).length === 0) {
@@ -41,13 +42,14 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
     // Existing file
     if (!contentType) {
       // Find a matching file
-      const [, folder, resource] = /^(.*\/)(.*)$/u.exec(filePath)!;
+      const [, folder, documentName] = /^(.*\/)(.*)$/u.exec(filePath)!;
       let fileName: string | undefined;
       try {
         const files = await this.blobClient.list(folder);
         fileName = files.find((file): boolean => {
-          let ext = file.match(/(?:\$\..+)?$/u);
-          return folder + resource + ext == file;
+          let starts = file.startsWith(folder+documentName);
+          let ext = /(?:\$\..+)?$/u.test(file.slice(documentName.length));
+          return starts && ext;
         });
       } catch {
         // Parent folder does not exist (or is not a folder)

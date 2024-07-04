@@ -1,7 +1,7 @@
 import { Readable } from "stream";
 import { DataFactory } from 'n3';
-import { BucketItem, BucketStream, Client as minio } from "minio";
-import { LDP, NotFoundHttpError, RDF, RepresentationMetadata, SOLID_META, getLoggerFor, serializeQuads } from "@solid/community-server";
+import { BucketItem, BucketStream, Client, Client as minio } from "minio";
+import { LDP, NotFoundHttpError, RDF, RepresentationMetadata, getLoggerFor, serializeQuads } from "@solid/community-server";
 let namedNode = DataFactory.namedNode;
 let literal = DataFactory.literal;
 
@@ -26,6 +26,9 @@ export class CloudBlobClient {
   * @param {string} bucket The name of the bucket to use for this client.
   */
   public constructor(bucket: string) {
+    // This is to compensate for the App CLI automatically resolving to a full absolute path.
+    // This default is also not going to work - needs to be more deterministically set by owner.
+    bucket = bucket.split("/").pop() || "data";
     this.bucket = bucket;
     this.minioUser = process.env.MINIO_USER || "ROOTNAME";
     this.minioPass = process.env.MINIO_PASS || "CHANGEME123";
@@ -84,14 +87,17 @@ export class CloudBlobClient {
     }
   }
 
-  public async writeContainer(path: string): Promise<boolean> {
+  public async writeContainer(path: string, metadata: RepresentationMetadata): Promise<boolean> {
     await this.createBucket();
     let containerName = this.containerFileName(path);
-    let containerContent = this.containerFileContent(path);
+    let containerContent = this.containerFileContent(path, metadata);
     try {
       await this.client.putObject(this.bucket, containerName, containerContent);
       return true;
     } catch (e) {
+      if (/The upload ID may be invalid/.test(e as string)) {
+        this.logStream(`Upload ID error: ${path}`, containerContent);
+      }
       this.logger.error(`Failed to write container: ${path} ${containerName}. ${e}`);
       return false;
     }
@@ -142,17 +148,18 @@ export class CloudBlobClient {
   /**
    * Super helpful debugging tool
    */
-  public logStream(stream: Readable) {
+  public logStream(msg: string, stream: Readable) {
     let chunks: Buffer[] = [];
+    chunks.push(Buffer.from(msg));
     let size = 0;
     stream.on('data', chunk => {
       size = size + chunk.length;
       chunks.push(Buffer.from(chunk));
     });
-    stream.on('error', e => { console.error(e); });
+    stream.on('error', console.log);
     stream.on('end', () => {
+      chunks.push(Buffer.from(`Total Size (bytes): ${size}`));
       console.log(Buffer.concat(chunks).toString('utf8'));
-      console.log('Total Size (bytes):', size);
     });
   }
 
@@ -163,12 +170,11 @@ export class CloudBlobClient {
    * Safe to assume you'll always get a path ending with a '/'
    */
   private containerFileName(path: string) {
-    path = `${path}.meta`;
+    path = `${path}.__container`;
     return path;
   }
 
-  private containerFileContent(path: string): Readable {
-    let metadata = new RepresentationMetadata();
+  private containerFileContent(path: string, metadata: RepresentationMetadata): Readable {
     metadata.add(RDF.terms.type, LDP.terms.Container);
     metadata.add(RDF.terms.type, LDP.terms.BasicContainer);
     metadata.add(namedNode('http://example.com/path'), literal(path));

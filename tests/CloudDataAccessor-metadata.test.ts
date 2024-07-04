@@ -5,11 +5,11 @@ import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 import { CloudExtensionBasedMapper } from "../src/CloudExtensionBasedMapper";
 import { DC, LDP, NotFoundHttpError, POSIX, RDF, RepresentationMetadata, SOLID_META, XSD, guardStream, isContainerPath, toLiteral } from "@solid/community-server";
-import { base, rootFilePath, within } from "./config";
+import { base, rootFilepath, within } from "./config";
 
-let mapper = new CloudExtensionBasedMapper(base, rootFilePath);
-let client = new CloudBlobClient(rootFilePath);
-let accessor = new CloudDataAccessor(mapper, rootFilePath);
+let mapper = new CloudExtensionBasedMapper(base, rootFilepath);
+let client = new CloudBlobClient(rootFilepath);
+let accessor = new CloudDataAccessor(mapper, rootFilepath);
 
 let now = new Date();
 now.setMilliseconds(0);
@@ -90,10 +90,10 @@ test("Generates metadata for container child resources.", async (t: Test) => {
   t.equal(children.length, 4, "Children match 4.");
 
   t.deepLooseEqual(new Set(children.map(c => c.identifier.value)), new Set([
-    `${base}cloud-data-accessor/container/extraFile`,
-    `${base}cloud-data-accessor/container/resource`,
-    `${base}cloud-data-accessor/container/internalContainerOne/`,
-    `${base}cloud-data-accessor/container/internalContainerTwo/`
+    `${base}root/cloud-data-accessor/container/extraFile`,
+    `${base}root/cloud-data-accessor/container/resource`,
+    `${base}root/cloud-data-accessor/container/internalContainerOne/`,
+    `${base}root/cloud-data-accessor/container/internalContainerTwo/`
   ]), "Identifiers match.");
 
   for (const c of children.filter(({ identifier }): boolean => identifier.value.endsWith('/'))) {

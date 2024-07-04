@@ -1,0 +1,4 @@
+<http://localhost:3001/.internal/accounts/index/pod/> a <http://www.w3.org/ns/ldp#Container>, <http://www.w3.org/ns/ldp#BasicContainer>, <http://www.w3.org/ns/ldp#Resource>;
+    <http://purl.org/dc/terms/modified> "2024-06-29T18:20:44.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>;
+    <http://example.com/path> "root/.internal/accounts/index/pod/";
+    <http://example.com/version> 1.
