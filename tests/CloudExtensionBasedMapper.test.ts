@@ -236,16 +236,3 @@ test("supports custom extensions.", async (t: Test) => {
   };
   t.deepEqual(actual, expected, "Custom Extensions.");
 });
-// describe('mapFilePathToUrl', (): void => {
-
-//   it('supports custom extensions.', async(): Promise<void> => {
-//     const customMapper = new ExtensionBasedMapper(base, rootFilepath, { cstm: 'text/custom' });
-//     await expect(customMapper.mapFilePathToUrl(`${rootFilepath}test$.cstm`, false))
-//       .resolves.toEqual({
-//         identifier: { path: `${base}test` },
-//         filePath: `${rootFilepath}test$.cstm`,
-//         contentType: 'text/custom',
-//         isMetadata: false,
-//       });
-//   });
-// });
