@@ -90,10 +90,10 @@ test("Generates metadata for container child resources.", async (t: Test) => {
   t.equal(children.length, 4, "Children match 4.");
 
   t.deepLooseEqual(new Set(children.map(c => c.identifier.value)), new Set([
-    `${base}root/cloud-data-accessor/container/extraFile`,
-    `${base}root/cloud-data-accessor/container/resource`,
-    `${base}root/cloud-data-accessor/container/internalContainerOne/`,
-    `${base}root/cloud-data-accessor/container/internalContainerTwo/`
+    `${base}cloud-data-accessor/container/extraFile`,
+    `${base}cloud-data-accessor/container/resource`,
+    `${base}cloud-data-accessor/container/internalContainerOne/`,
+    `${base}cloud-data-accessor/container/internalContainerTwo/`
   ]), "Identifiers match.");
 
   for (const c of children.filter(({ identifier }): boolean => identifier.value.endsWith('/'))) {
