@@ -16,27 +16,27 @@ let fixtures = [
   { name: "cloud-blob-client/plain.txt", path: "./tests/fixtures/plain.txt" }
 ];
 
-test("CloudBlobClient: Write container to storage.", async (t: Test) => {
+test('CloudBlobClient: Write container to storage.', async (t: Test) => {
   let metadata = new RepresentationMetadata();
   let written = await client.writeContainer("cloud-blob-client/", metadata);
   t.ok(written, "Wrote container cloud-blob-client/.");
   t.end();
 });
 
-test("CloudBlobClient: Write file to storage.", async (t: Test) => {
+test('CloudBlobClient: Write file to storage.', async (t: Test) => {
   let written = await client.write(plainTextFilename, plainTextContent);
   t.ok(written, "Wrote plain.txt.");
   t.end();
 });
 
-test("CloudBlobClient: Read file from storage.", async (t: Test) => {
+test('CloudBlobClient: Read file from storage.', async (t: Test) => {
   let read = await client.read(plainTextFilename);
   t.ok(read, 'Read is not null.');
   read.destroy(); // so we don't leak a handle of this stream
   t.end();
 });
 
-test("CloudBlobClient: List files.", async (t: Test) => {
+test('CloudBlobClient: List files.', async (t: Test) => {
   t.plan(fixtures.length * 2);
 
   for (const file of fixtures) {
@@ -53,7 +53,7 @@ test("CloudBlobClient: List files.", async (t: Test) => {
   }
 });
 
-test("CloudBlobClient: Delete file from storage.", async (t: Test) => {
+test('CloudBlobClient: Delete file from storage.', async (t: Test) => {
   let deleted = await client.delete(plainTextFilename);
   t.ok(deleted, "Deleted plain.txt");
   t.end();
