@@ -1,5 +1,5 @@
 import * as mime from 'mime-types';
-import { BaseFileIdentifierMapper, DEFAULT_CUSTOM_TYPES, FileIdentifierMapperFactory, NotImplementedHttpError, ResourceIdentifier, ResourceLink, encodeUriPathComponents, ensureTrailingSlash, getExtension, trimTrailingSlashes } from '@solid/community-server';
+import { BaseFileIdentifierMapper, DEFAULT_CUSTOM_TYPES, FileIdentifierMapperFactory, InternalServerError, NotImplementedHttpError, ResourceIdentifier, ResourceLink, encodeUriPathComponents, ensureTrailingSlash, getExtension, trimTrailingSlashes } from '@solid/community-server';
 import { CloudBlobClient } from './CloudBlobClient';
 
 /**
@@ -12,11 +12,13 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   private readonly customTypes: Record<string, string>;
   private readonly customExtensions: Record<string, string>;
   private readonly blobClient: CloudBlobClient;
+  private internalRootFilepath: string;
 
   public constructor(baseUrl: string, rootFilepath: string, customTypes?: Record<string, string>) {
     // We abstract the rootFilepath because we intend to use it instead as a bucket name. 
     // This makes the rootFilepath of the bucket "root", and maintains functionality of original community-server.
     super(baseUrl, "root");
+    this.internalRootFilepath = "root";
     this.blobClient = new CloudBlobClient(rootFilepath);
 
     // Workaround for https://github.com/LinkedSoftwareDependencies/Components.js/issues/20
@@ -82,20 +84,19 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   }
 
   public async mapFilePathToUrl(filePath: string, isContainer: boolean): Promise<ResourceLink> {
-    //TODO: Debatable this is necessary - we consider the rootFilepath as the bucket.
-    // if (!filePath.startsWith(this.rootFilepath)) {
-    //   this.logger.error(`Trying to access file ${filePath} outside of ${this.rootFilepath}`);
-    //   throw new InternalServerError(`File ${filePath} is not part of the file storage at ${this.rootFilepath}`);
-    // }
-    // const relative = filePath.slice(this.rootFilepath.length);
+    if (!filePath.startsWith(this.internalRootFilepath)) {
+      this.logger.error(`Trying to access file ${filePath} outside of ${this.rootFilepath}`);
+      throw new InternalServerError(`File ${filePath} is not part of the file storage at ${this.rootFilepath}`);
+    }
+    const relative = filePath.slice(this.rootFilepath.length);
     let url: string;
     let contentType: string | undefined;
 
     if (isContainer) {
-      url = await this.getContainerUrl(filePath);
+      url = await this.getContainerUrl(relative);
       this.logger.debug(`Container filepath ${filePath} maps to URL ${url}`);
     } else {
-      url = await this.getDocumentUrl(filePath);
+      url = await this.getDocumentUrl(relative);
       this.logger.debug(`Document ${filePath} maps to URL ${url}`);
       contentType = await this.getContentTypeFromPath(filePath);
     }
@@ -106,12 +107,8 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
     return { identifier: { path: url }, filePath, contentType, isMetadata };
   }
 
-  protected async getContainerUrl(relative: string): Promise<string> {
-    return ensureTrailingSlash(this.baseRequestURI + "/" + encodeUriPathComponents(relative));
-  }
-
   protected async getDocumentUrl(relative: string): Promise<string> {
-    return trimTrailingSlashes(this.baseRequestURI + "/" + encodeUriPathComponents(this.stripExtension(relative)));
+    return super.getDocumentUrl(this.stripExtension(relative));
   }
 
   protected stripExtension(path: string): string {
