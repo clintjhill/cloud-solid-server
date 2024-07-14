@@ -4,26 +4,29 @@ import { createReadStream } from "fs";
 import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 import { CloudExtensionBasedMapper } from "../src/CloudExtensionBasedMapper";
-import { base, rootFilepath, within } from "./config";
-import { APPLICATION_OCTET_STREAM, DC, Guarded, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, SOLID_META, UnsupportedMediaTypeHttpError, XSD, guardStream, guardedStreamFrom, isContainerPath, readableToString, toLiteral } from "@solid/community-server";
+import { base, rootFilepath, createDocument, within, data } from "./config";
+import { APPLICATION_OCTET_STREAM, CONTENT_TYPE, DC, Guarded, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, SOLID_META, UnsupportedMediaTypeHttpError, XSD, guardedStreamFrom, isContainerPath, readableToString, toLiteral } from "@solid/community-server";
 
 let client = new CloudBlobClient(rootFilepath);
 let mapper = new CloudExtensionBasedMapper(base, rootFilepath);
 let accessor = new CloudDataAccessor(mapper, rootFilepath);
-let now = new Date();
+let now: Date;
 let metadata: RepresentationMetadata;
-let data: Guarded<Readable>;
 
-test('CloudDataAccessor: Setup', async (t: Test) => {
+async function setup() {
   let plainText = createReadStream("./tests/fixtures/plain.txt");
   // setup a file such that a directory name could be matched.
   // write to the "root" to assure CloudExtensionBasedMapper rootFilepath is respected.
   await client.write("root/cloud-data-accessor/plain.txt", plainText);
   metadata = new RepresentationMetadata(APPLICATION_OCTET_STREAM);
-  data = guardedStreamFrom(['data']);
+  now = new Date();
   now.setMilliseconds(0);
+};
+
+test('CloudDataAccessor: Setup', async (t: Test) => {
+  await setup();
   t.pass("Setup Completed.");
-})
+});
 
 test('CloudDataAccessor: can only handle binary data.', async (t: Test) => {
   let handles = async () => { await accessor.canHandle({ binary: true } as Representation); }
@@ -123,15 +126,6 @@ test('CloudDataAccessor: generates the metadata for a container.', async (t: Tes
   t.equal(metadata.quads(null, null, null, SOLID_META.terms.ResponseMetadata).length, 1, "ResponseMetadata.");
 });
 
-async function createDocument(path: string): Promise<string> {
-  let data = guardStream(Readable.from(["data"]));
-  path = `${base}${path}`;
-  let doc = { path };
-  let meta = new RepresentationMetadata(doc);
-  await accessor.writeDocument(doc, data, meta);
-  return path;
-}
-
 test('CloudDataAccessor: generates metadata for container child resources.', async (t: Test) => {
 
   let container = { path: `${base}cloud-data-accessor/container/` };
@@ -141,10 +135,10 @@ test('CloudDataAccessor: generates metadata for container child resources.', asy
   let internalContainerTwo = { path: `${base}cloud-data-accessor/container/internalContainerTwo/` };
   await accessor.writeContainer(internalContainerTwo, new RepresentationMetadata(internalContainerTwo));
 
-  await createDocument("cloud-data-accessor/container/extraFile");
-  await createDocument("cloud-data-accessor/container/resource");
-  await createDocument("cloud-data-accessor/container/internalContainerOne/shouldNotSeeMe");
-  await createDocument("cloud-data-accessor/container/internalContainerTwo/shouldNotSeeMeEither");
+  await createDocument(accessor, "cloud-data-accessor/container/extraFile");
+  await createDocument(accessor, "cloud-data-accessor/container/resource");
+  await createDocument(accessor, "cloud-data-accessor/container/internalContainerOne/shouldNotSeeMe");
+  await createDocument(accessor, "cloud-data-accessor/container/internalContainerTwo/shouldNotSeeMeEither");
 
   const children: RepresentationMetadata[] = [];
   for await (const child of accessor.getChildren(container)) {
@@ -195,56 +189,45 @@ test.skip('throws an error if there is a problem with the internal metadata.', a
   t.fail("Not tested.");
 });
 
-test('CloudDataAccessor: Writing document.', async (t: Test) => {
-  let data = guardStream(Readable.from(['data']));
-  let dataX = guardStream(Readable.from(["data"]));
-
-  let firstFile = { path: `${base}cloud-data-accessor/writes/firstFile` };
-  await accessor.writeDocument(firstFile, data, new RepresentationMetadata(firstFile));
-  let firstData = await client.read(`root/cloud-data-accessor/writes/firstFile`);
-  t.ok(firstData, "Read back.");
-  firstData.destroy();
-
-  let extraFile = { path: `${base}cloud-data-accessor/writes/extraFile` };
-  await accessor.writeDocument(extraFile, dataX, new RepresentationMetadata(extraFile));
-  let extraData = await client.read(`root/cloud-data-accessor/writes/extraFile`);
-  t.ok(extraData, "Read back.");
-  extraData.destroy();
-});
-
-
 test('CloudDataAccessor: throws a 404 if the identifier does not start with the base.', async (t: Test) => {
-  let notFound = async () => accessor.writeDocument({ path: 'badpath' }, data, metadata);
+  let notFound = async () => accessor.writeDocument({ path: 'badpath' }, data(), metadata);
   await t.rejects(notFound, NotFoundHttpError, "Bad Path.");
 });
 
+test('CloudDataAccessor: writes the data to the corresponding file.', async (t: Test) => {
+  let write = async () => { await accessor.writeDocument({ path: `${base}cloud-data-accessor/resource` }, data(), metadata) };
+  await t.doesNotReject(write, "Successful write.");
+  let actual = await readableToString(await client.read('root/cloud-data-accessor/resource'));
+  let expected = "data";
+  t.equal(actual, expected, "File written.");
+});
+
+test('CloudDataAccessor: writes metadata to the corresponding file.', async (t: Test) => {
+  let identifier = { path: `${base}cloud-data-accessor/res.ttl` };
+  let likesMetadata = new RepresentationMetadata(
+    identifier,
+    { [CONTENT_TYPE]: 'text/turtle', likes: 'apples' },
+  );
+
+  let writeMetadata = async () => { await accessor.writeDocument(identifier, data(), likesMetadata); };
+  await t.doesNotReject(writeMetadata, "Successful write.");
+
+  let actualFile = await readableToString(await client.read('root/cloud-data-accessor/res.ttl'));
+  t.equal(actualFile, "data", "Data file.");
+
+  let actualMetadataFile = await readableToString(await client.read('root/cloud-data-accessor/res.ttl.meta'));
+  t.match(actualMetadataFile, new RegExp(`<${base}cloud-data-accessor/res.ttl> <likes> "apples".`), "Metadata file.");
+});
+
+test('CloudDataAccessor: does not write metadata that is stored by the file system.', async (t: Test) => {
+  metadata.add(RDF.terms.type, LDP.terms.Resource);
+  let writeMetadata = async () => { await accessor.writeDocument({ path: `${base}cloud-data-accessor/no-meta-test` }, data(), metadata); };
+  await t.doesNotReject(writeMetadata, "Successful write.");
+  let notFound = async () => { await client.read('root/cloud-data-accessor/no-meta-test.meta'); };
+  await t.rejects(notFound, NotFoundHttpError, "No metadata.");
+});
+
 // describe('writing a document', (): void => {
-//   it('throws a 404 if the identifier does not start with the base.', async(): Promise<void> => {
-//     await expect(accessor.writeDocument({ path: 'badpath' }, data, metadata))
-//       .rejects.toThrow(NotFoundHttpError);
-//   });
-
-//   it('writes the data to the corresponding file.', async(): Promise<void> => {
-//     await expect(accessor.writeDocument({ path: `${base}resource` }, data, metadata)).resolves.toBeUndefined();
-//     expect(cache.data.resource).toBe('data');
-//   });
-
-//   it('writes metadata to the corresponding metadata file.', async(): Promise<void> => {
-//     metadata = new RepresentationMetadata(
-//       { path: `${base}res.ttl` },
-//       { [CONTENT_TYPE]: 'text/turtle', likes: 'apples' },
-//     );
-//     await expect(accessor.writeDocument({ path: `${base}res.ttl` }, data, metadata)).resolves.toBeUndefined();
-//     expect(cache.data['res.ttl']).toBe('data');
-//     expect(cache.data['res.ttl.meta']).toMatch(`<${base}res.ttl> <likes> "apples".`);
-//   });
-
-//   it('does not write metadata that is stored by the file system.', async(): Promise<void> => {
-//     metadata.add(RDF.terms.type, LDP.terms.Resource);
-//     await expect(accessor.writeDocument({ path: `${base}resource` }, data, metadata)).resolves.toBeUndefined();
-//     expect(cache.data.resource).toBe('data');
-//     expect(cache.data['resource.meta']).toBeUndefined();
-//   });
 
 //   it('deletes existing metadata if nothing new needs to be stored.', async(): Promise<void> => {
 //     cache.data = { resource: 'data', 'resource.meta': 'metadata!' };

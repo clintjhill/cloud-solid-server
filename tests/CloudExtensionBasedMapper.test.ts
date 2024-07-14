@@ -70,7 +70,7 @@ test('CloudExtensionBasedMapper: determines content-type by extension when looki
 
 test('CloudExtensionBasedMapper: determines the content-type based on the extension.', async (t: Test) => {
   let plainText = createReadStream("./tests/fixtures/plain.txt");
-  await client.write("cloud-extension-mapper/resource/plain.txt", plainText);
+  await client.write("root/cloud-extension-mapper/resource/plain.txt", plainText);
   let actual = await mapper.mapUrlToFilePath({ path: `${base}cloud-extension-mapper/resource/plain.txt` }, false);
   let expected = {
     identifier: { path: `${base}cloud-extension-mapper/resource/plain.txt` },

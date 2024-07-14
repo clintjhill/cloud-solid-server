@@ -1,6 +1,6 @@
 import type { Readable } from 'node:stream';
 import type { Quad } from '@rdfjs/types';
-import { CONTENT_TYPE_TERM, DC, DataAccessor, Guarded, IANA, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, ResourceIdentifier, ResourceLink, SOLID_META, UnsupportedMediaTypeHttpError, XSD, addResourceMetadata, getLoggerFor, guardStream, isContainerIdentifier, isContainerPath, parseContentType, parseQuads, serializeQuads, toLiteral, toNamedTerm, updateModifiedDate } from '@solid/community-server';
+import { CONTENT_TYPE_TERM, DC, DataAccessor, Guarded, IANA, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, ResourceIdentifier, ResourceLink, SOLID_META, UnsupportedMediaTypeHttpError, XSD, addResourceMetadata, getLoggerFor, guardStream, isContainerIdentifier, isContainerPath, parseContentType, parseQuads, readableToString, serializeQuads, toLiteral, toNamedTerm, updateModifiedDate } from '@solid/community-server';
 import { CloudBlobClient, CloudBlobStat } from './CloudBlobClient';
 import { CloudExtensionBasedMapper } from './CloudExtensionBasedMapper';
 

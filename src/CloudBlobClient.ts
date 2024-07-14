@@ -158,7 +158,7 @@ export class CloudBlobClient {
     });
     stream.on('error', console.log);
     stream.on('end', () => {
-      chunks.push(Buffer.from(`Total Size (bytes): ${size}`));
+      chunks.push(Buffer.from(` -- Total Size (bytes): ${size}`));
       console.log(Buffer.concat(chunks).toString('utf8'));
     });
   }

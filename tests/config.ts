@@ -1,5 +1,7 @@
+import { Readable } from "stream";
 import type { Term } from '@rdfjs/types';
-import { XSD, toLiteral } from '@solid/community-server';
+import { Guarded, RepresentationMetadata, XSD, guardStream, guardedStreamFrom, toLiteral } from '@solid/community-server';
+import { CloudDataAccessor } from "../src/CloudDataAccessor";
 
 /**
  * A localhost base URL for testing purposes.
@@ -37,4 +39,16 @@ function within(literal: Term | undefined, s: number, now: Date, isDateStr: bool
   return delta <= s;
 }
 
-export { base, rootFilepath, internalRootFilepath, within };
+function data(): Guarded<Readable> {
+  return guardedStreamFrom(['data']);
+}
+
+async function createDocument(accessor: CloudDataAccessor, path: string): Promise<string> {
+  path = `${base}${path}`;
+  let doc = { path };
+  let meta = new RepresentationMetadata(doc);
+  await accessor.writeDocument(doc, data(), meta);
+  return path;
+}
+
+export { base, rootFilepath, internalRootFilepath, within, createDocument, data };

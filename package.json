@@ -26,6 +26,7 @@
     "leaked-handles": "^5.2.0",
     "minio": "^8.0.0",
     "tap-arc": "^1.2.2",
+    "tap-pessimist": "^1.0.1",
     "tape": "^5.7.5",
     "tape-promise": "^4.0.0",
     "ts-node": "^10.9.2",
