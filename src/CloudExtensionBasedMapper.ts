@@ -1,3 +1,4 @@
+import * as path from "path";
 import * as mime from 'mime-types';
 import { BaseFileIdentifierMapper, DEFAULT_CUSTOM_TYPES, FileIdentifierMapperFactory, InternalServerError, NotImplementedHttpError, ResourceIdentifier, ResourceLink, encodeUriPathComponents, ensureTrailingSlash, getExtension, trimTrailingSlashes } from '@solid/community-server';
 import { CloudBlobClient } from './CloudBlobClient';
@@ -12,13 +13,15 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   private readonly customTypes: Record<string, string>;
   private readonly customExtensions: Record<string, string>;
   private readonly blobClient: CloudBlobClient;
-  private internalRootFilepath: string;
+  private readonly internalRootFilepath: string;
+  private readonly templatePath: string;
 
   public constructor(baseUrl: string, rootFilepath: string, customTypes?: Record<string, string>) {
     // We abstract the rootFilepath because we intend to use it instead as a bucket name. 
     // This makes the rootFilepath of the bucket "root", and maintains functionality of original community-server.
     super(baseUrl, "root");
     this.internalRootFilepath = "root";
+    this.templatePath = path.join(process.cwd(), 'node_modules', '@solid', 'community-server', 'templates');
     this.blobClient = new CloudBlobClient(rootFilepath);
 
     // Workaround for https://github.com/LinkedSoftwareDependencies/Components.js/issues/20
@@ -84,7 +87,7 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   }
 
   public async mapFilePathToUrl(filePath: string, isContainer: boolean): Promise<ResourceLink> {
-    if (!filePath.startsWith(this.internalRootFilepath)) {
+    if (!filePath.startsWith(this.internalRootFilepath)) { // && !filePath.startsWith(this.templatePath)) {
       this.logger.error(`Trying to access file ${filePath} outside of ${this.rootFilepath}`);
       throw new InternalServerError(`File ${filePath} is not part of the file storage at ${this.rootFilepath}`);
     }

@@ -1,6 +1,7 @@
 .DS_Store
 .data
 data
+test-data
 .internal
 dist
 components

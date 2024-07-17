@@ -1,7 +1,10 @@
 import { Readable } from "stream";
+import path from "path";
 import type { Term } from '@rdfjs/types';
-import { Guarded, RepresentationMetadata, XSD, guardStream, guardedStreamFrom, toLiteral } from '@solid/community-server';
+import { Guarded, RepresentationMetadata, XSD, guardedStreamFrom, toLiteral } from '@solid/community-server';
 import { CloudDataAccessor } from "../src/CloudDataAccessor";
+import { ComponentsManager } from 'componentsjs';
+import type { IModuleState } from 'componentsjs';
 
 /**
  * A localhost base URL for testing purposes.
@@ -51,4 +54,44 @@ async function createDocument(accessor: CloudDataAccessor, path: string): Promis
   return path;
 }
 
-export { base, rootFilepath, internalRootFilepath, within, createDocument, data };
+let cachedModuleState: IModuleState;
+async function instantiateFromConfig(componentUrl: string, configPaths: string | string[], variables?: Record<string, any>,): Promise<any> {
+  // Initialize the Components.js loader
+  const mainModulePath = process.cwd();
+  const manager = await ComponentsManager.build({
+    mainModulePath,
+    logLevel: 'error',
+    moduleState: cachedModuleState,
+    typeChecking: false,
+  });
+  cachedModuleState = manager.moduleState;
+
+  if (!Array.isArray(configPaths)) {
+    configPaths = [configPaths];
+  }
+
+  // Instantiate the component from the config(s)
+  for (const configPath of configPaths) {
+    await manager.configRegistry.register(configPath);
+  }
+  return await manager.instantiate(componentUrl, { variables });
+}
+
+function getTestConfigPath(configFile: string): string {
+  return path.join(__dirname, 'configs', configFile);
+}
+
+function getDefaultVariables(port: number, baseUrl?: string): Record<string, any> {
+  return {
+    'urn:solid-server:default:variable:baseUrl': baseUrl ?? `http://localhost:${port}/`,
+    'urn:solid-server:default:variable:port': port,
+    'urn:solid-server:default:variable:socket': null,
+    'urn:solid-server:default:variable:loggingLevel': 'off',
+    'urn:solid-server:default:variable:showStackTrace': true,
+    'urn:solid-server:default:variable:seedConfig': null,
+    'urn:solid-server:default:variable:workers': 1,
+    'urn:solid-server:default:variable:confirmMigration': false,
+  };
+}
+
+export { base, rootFilepath, internalRootFilepath, within, createDocument, data, instantiateFromConfig, getTestConfigPath, getDefaultVariables };

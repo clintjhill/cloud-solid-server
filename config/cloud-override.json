@@ -44,24 +44,12 @@
       }
     },
     {
-      "@type": "Override",
-      "overrideInstance": {
-        "@id": "urn:solid-server:default:TemplatedResourcesGenerator"
-      },
-      "overrideSteps": [
-        {
-          "@type": "OverrideParameters",
-          "overrideValue": {
-            "@type": "SubfolderResourcesGenerator",
-            "resourcesGenerator": {
-              "@type": "BaseResourcesGenerator",
-              "factory": {
-                "@type": "CloudExtensionBasedMapperFactory"
-              },
-            }
-          }
-        }
-      ]
+      "comment": "Cloud Initializer.",
+      "@id": "urn:blob-data-accessor:CloudInitializer",
+      "@type": "CloudInitializer",
+      "rootFilepath": {
+        "@id": "urn:solid-server:default:variable:rootFilePath"
+      }
     }
   ]
 }

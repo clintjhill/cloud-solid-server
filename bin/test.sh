@@ -4,6 +4,7 @@ trap "docker stop minio" EXIT
 
 npm run clean
 npm run storage
+npm run build
 
 tape -r ts-node/register/transpile-only -r leaked-handles tests/**/*.ts | tap-arc --bail
 

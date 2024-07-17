@@ -4,16 +4,15 @@
     "https://linkedsoftwaredependencies.org/bundles/npm/blob-data-accessor/^1.0.0/components/context.jsonld"
   ],
   "import": [
-    "css:config/app/init/static-root.json",
+    "css:config/app/init/initialize-root.json",
     "css:config/app/main/default.json",
-    "css:config/app/variables/default.json",
     "css:config/http/handler/default.json",
     "css:config/http/middleware/default.json",
     "css:config/http/notifications/disabled.json",
     "css:config/http/server-factory/http.json",
     "css:config/http/static/default.json",
     "css:config/identity/access/public.json",
-    "css:config/identity/email/default.json",
+
     "css:config/identity/handler/default.json",
     "css:config/identity/oidc/default.json",
     "css:config/identity/ownership/token.json",
@@ -28,49 +27,43 @@
     "bda:config/cloud-override.json",
 
     "css:config/storage/key-value/resource-store.json",
-    "css:config/storage/location/pod.json",
+    "css:config/storage/location/root.json",
     "css:config/storage/middleware/default.json",
     "css:config/util/auxiliary/acl.json",
     "css:config/util/identifiers/suffix.json",
     "css:config/util/index/default.json",
     "css:config/util/logging/winston.json",
     "css:config/util/representation-conversion/default.json",
-    "css:config/util/resource-locker/memory.json",
+    "css:config/util/resource-locker/file.json",
     "css:config/util/variables/default.json"
   ],
   "@graph": [
     {
-      "comment": "A Solid server that stores its resources on disk and uses WAC for authorization."
-    },
-    {
-      "@id": "urn:solid-server:default:WorkerSequenceInitializer",
-      "@type": "SequenceHandler",
-      "handlers": [
+      "@id": "urn:solid-server:test:Instances",
+      "@type": "RecordObject",
+      "record": [
         {
-          "@type": "CloudInitializer",
-          "@id": "urn:blob-data-accessor:CloudInitializer"
+          "RecordObject:_record_key": "app",
+          "RecordObject:_record_value": { "@id": "urn:solid-server:default:App" }
+        },
+        {
+          "RecordObject:_record_key": "store",
+          "RecordObject:_record_value": { "@id": "urn:solid-server:default:ResourceStore_Backend" }
+        },
+        {
+          "RecordObject:_record_key": "locker",
+          "RecordObject:_record_value": { "@id": "urn:solid-server:default:FileSystemResourceLocker" }
         }
       ]
     },
     {
-      "@type": "Override",
-      "overrideInstance": {
-        "@id": "urn:solid-server:default:TemplatedResourcesGenerator"
-      },
-      "overrideSteps": [
-        {
-          "@type": "OverrideParameters",
-          "overrideValue": {
-            "@type": "SubfolderResourcesGenerator",
-            "resourcesGenerator": {
-              "@type": "BaseResourcesGenerator",
-              "factory": {
-                "@type": "CloudExtensionBasedMapperFactory"
-              },
-            }
-          }
-        }
-      ]
+      "@id": "urn:solid-server:default:EmailSender",
+      "@type": "BaseEmailSender",
+      "args_senderName": "Solid Server",
+      "args_emailConfig_host": "smtp.example.email",
+      "args_emailConfig_port": 587,
+      "args_emailConfig_auth_user": "alice@example.email",
+      "args_emailConfig_auth_pass": "NYEaCsqV7aVStRCbmC"
     }
   ]
 }

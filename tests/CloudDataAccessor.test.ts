@@ -1,11 +1,10 @@
 import test, { Test } from "tape-promise/tape";
-import { Readable } from "stream";
 import { createReadStream } from "fs";
 import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 import { CloudExtensionBasedMapper } from "../src/CloudExtensionBasedMapper";
 import { base, rootFilepath, createDocument, within, data } from "./config";
-import { APPLICATION_OCTET_STREAM, CONTENT_TYPE, DC, Guarded, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, SOLID_META, UnsupportedMediaTypeHttpError, XSD, guardedStreamFrom, isContainerPath, readableToString, toLiteral } from "@solid/community-server";
+import { APPLICATION_OCTET_STREAM, CONTENT_TYPE, DC, LDP, NotFoundHttpError, POSIX, RDF, Representation, RepresentationMetadata, SOLID_META, UnsupportedMediaTypeHttpError, XSD, isContainerPath, readableToString, toLiteral } from "@solid/community-server";
 
 let client = new CloudBlobClient(rootFilepath);
 let mapper = new CloudExtensionBasedMapper(base, rootFilepath);
@@ -227,14 +226,16 @@ test('CloudDataAccessor: does not write metadata that is stored by the file syst
   await t.rejects(notFound, NotFoundHttpError, "No metadata.");
 });
 
-// describe('writing a document', (): void => {
+test('CloudDataAccessor: deletes existing metadata if nothing new needs to be stored.', async (t: Test) => {
+  await client.write('root/cloud-data-accessor/delete-meata', data());
+  await client.write('root/cloud-data-accessor/delete-meata.meta', data());
+  let deleteMeta = async () => { await accessor.writeDocument({ path: `${base}cloud-data-accessor/delete-meata` }, data(), metadata) };
+  await t.doesNotReject(deleteMeta, "Deleted meta.");
+  let notFound = async () => { await client.read('root/cloud-data-accessor/delete-meata.meta'); };
+  await t.rejects(notFound, NotFoundHttpError, "No metadata.");
+});
 
-//   it('deletes existing metadata if nothing new needs to be stored.', async(): Promise<void> => {
-//     cache.data = { resource: 'data', 'resource.meta': 'metadata!' };
-//     await expect(accessor.writeDocument({ path: `${base}resource` }, data, metadata)).resolves.toBeUndefined();
-//     expect(cache.data.resource).toBe('data');
-//     expect(cache.data['resource.meta']).toBeUndefined();
-//   });
+// describe('writing a document', (): void => {
 
 //   it('errors if there is a problem deleting the old metadata file.', async(): Promise<void> => {
 //     cache.data = { resource: 'data', 'resource.meta': 'metadata!' };
