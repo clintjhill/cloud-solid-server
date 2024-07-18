@@ -33,7 +33,6 @@ export class CloudInitializer extends Initializer {
 // a port of Go's filepath.Walk
 async function walk(pathname: string, walkFunc: Function, dirent?: fs.Stats) {
   const _pass = (err) => err;
-
   let err;
 
   // special case: walk the very first file or folder

@@ -51,7 +51,10 @@ test("Integration: can put a document for which the URI path contains URL-encode
   });
   const headers = check2.headers.get('link')!.split(',').map((item: string) => item.trim());
   t.notOk(headers.includes('<http://www.w3.org/ns/ldp#Container>; rel="type"'), "Not Container.");
-  let exists = async () => { await client.read(`${internalRootFilepath}c1/c2/t1%2F$.txt`); };
+  let exists = async () => {
+    let data = await client.read(`${internalRootFilepath}c1/c2/t1%2F$.txt`);
+    data.destroy();
+  };
   await t.doesNotReject(exists, NotFoundHttpError, "Exists.");
 });
 

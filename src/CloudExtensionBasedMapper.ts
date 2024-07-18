@@ -87,7 +87,7 @@ export class CloudExtensionBasedMapper extends BaseFileIdentifierMapper {
   }
 
   public async mapFilePathToUrl(filePath: string, isContainer: boolean): Promise<ResourceLink> {
-    if (!filePath.startsWith(this.internalRootFilepath)) { // && !filePath.startsWith(this.templatePath)) {
+    if (!filePath.startsWith(this.internalRootFilepath) && !filePath.startsWith(this.templatePath)) {
       this.logger.error(`Trying to access file ${filePath} outside of ${this.rootFilepath}`);
       throw new InternalServerError(`File ${filePath} is not part of the file storage at ${this.rootFilepath}`);
     }
