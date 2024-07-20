@@ -32,8 +32,8 @@ export class CloudInitializer extends Initializer {
 
 // a port of Go's filepath.Walk
 async function walk(pathname: string, walkFunc: Function, dirent?: fs.Stats) {
-  const _pass = (err) => err;
-  let err;
+  const _pass = (err: any) => err;
+  let err: any;
 
   // special case: walk the very first file or folder
   if (!dirent) {
@@ -60,6 +60,7 @@ async function walk(pathname: string, walkFunc: Function, dirent?: fs.Stats) {
 
   // "walk does not follow symbolic links"
   // (doing so could cause infinite loops)
+  // @ts-ignore
   if (!dirent.isDirectory()) {
     return;
   }
