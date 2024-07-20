@@ -10,7 +10,7 @@
     "clean": "./bin/clean.sh",
     "storage": "./bin/storage.sh",
     "start": "./bin/start.sh",
-    "test": "./bin/test.sh -q",
+    "test": "./bin/test.sh --bail",
     "tdd": "./bin/test.sh"
   },
   "files": [

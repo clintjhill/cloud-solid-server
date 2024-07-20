@@ -5,6 +5,7 @@ import { Guarded, RepresentationMetadata, XSD, guardedStreamFrom, toLiteral } fr
 import { CloudDataAccessor } from "../src/CloudDataAccessor";
 import { ComponentsManager } from 'componentsjs';
 import type { IModuleState } from 'componentsjs';
+import { CloudBlobClient } from "../src/CloudBlobClient";
 
 /**
  * A localhost base URL for testing purposes.
@@ -94,4 +95,17 @@ function getDefaultVariables(port: number, baseUrl?: string): Record<string, any
   };
 }
 
-export { base, rootFilepath, internalRootFilepath, within, createDocument, data, instantiateFromConfig, getTestConfigPath, getDefaultVariables };
+/**
+  * Utility for testing existence of a resource, that it does not
+  * throw NotFoundHttpError.
+  *
+  * used: t.doesNotReject(exists(client, "a/path/to/data"));
+  */
+function exists(client: CloudBlobClient, path: string): () => Promise<void> {
+  return async () => {
+    let data = await client.read(path);
+    data.destroy();
+  };
+}
+
+export { base, rootFilepath, internalRootFilepath, within, createDocument, data, instantiateFromConfig, getTestConfigPath, getDefaultVariables, exists };

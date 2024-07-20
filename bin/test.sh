@@ -6,13 +6,13 @@ npm run clean
 npm run storage
 npm run build
 
-# Adding the quiet flag just runs tests with no output.
-if [[ "$1" == "-q" ]]
+# Adding the bail flag just runs tests with no output.
+if [[ "$1" == "--bail" ]]
 then
   tape -r ts-node/register/transpile-only -r leaked-handles tests/**/*.ts | tap-pessimist
   echo "Tests Succeeded."
 else
-  if tape -r ts-node/register/transpile-only -r leaked-handles tests/**/*.ts | tap-arc --bail;
+  if tape -r ts-node/register/transpile-only -r leaked-handles tests/**/*.ts | tap-arc;
   then
     echo "Tests Succeeded."
   else

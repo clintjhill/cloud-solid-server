@@ -1,5 +1,5 @@
 import test, { Test } from "tape-promise/tape";
-import { getDefaultVariables, getTestConfigPath, instantiateFromConfig, internalRootFilepath, rootFilepath } from "./config";
+import { exists, getDefaultVariables, getTestConfigPath, instantiateFromConfig, internalRootFilepath, rootFilepath } from "./config";
 import { App, NotFoundHttpError } from "@solid/community-server";
 import { CloudBlobClient } from "../src/CloudBlobClient";
 
@@ -51,11 +51,9 @@ test("Integration: can put a document for which the URI path contains URL-encode
   });
   const headers = check2.headers.get('link')!.split(',').map((item: string) => item.trim());
   t.notOk(headers.includes('<http://www.w3.org/ns/ldp#Container>; rel="type"'), "Not Container.");
-  let exists = async () => {
-    let data = await client.read(`${internalRootFilepath}c1/c2/t1%2F$.txt`);
-    data.destroy();
-  };
-  await t.doesNotReject(exists, NotFoundHttpError, "Exists.");
+
+  let check3 = exists(client, `${internalRootFilepath}c1/c2/t1%2F$.txt`);
+  await t.doesNotReject(check3, NotFoundHttpError, "Exists.");
 });
 
 test('Integration: can post a document using a slug that contains URL-encoded separator characters.', async (t: Test) => {
@@ -70,11 +68,9 @@ test('Integration: can post a document using a slug that contains URL-encoded se
   });
   t.equal(res.status, 201, "201 Status.");
   t.equal(res.headers.get('location'), `${baseUrl}${slug}`, "Location header.");
-  let exists = async () => {
-    let data = await client.read(`${internalRootFilepath}${slug}$.txt`);
-    data.destroy();
-  };
-  await t.doesNotReject(exists, NotFoundHttpError, "Exists.");
+
+  let check3 = exists(client, `${internalRootFilepath}${slug}$.txt`);
+  await t.doesNotReject(check3, NotFoundHttpError, "Exists.");
 });
 
 test('Integration: prevents accessing a document via a different identifier that results in the same path after URL decoding.', async (t: Test) => {
@@ -97,40 +93,60 @@ test('Integration: prevents accessing a document via a different identifier that
   });
 
   t.equal(check1.status, 404, "Not Found.");
-  let exists = async () => {
-    let data = await client.read(`${internalRootFilepath}foo/bar$.txt`);
-    data.destroy();
-  };
-  await t.doesNotReject(exists, NotFoundHttpError, "Exists.");
+
+  let check2 = exists(client, `${internalRootFilepath}foo/bar$.txt`);
+  await t.doesNotReject(check2, NotFoundHttpError, "Exists.");
+
+  // Next, put a resource using a path with an encoded separator character: bar%2Ffoo
+  await fetch(`${baseUrl}bar%2Ffoo`, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'text/plain',
+    },
+    body: 'abc',
+  });
+
+  // The resource at bar%2Ffoo should not be accessible through bar/foo
+  const check3 = await fetch(`${baseUrl}bar/foo`, {
+    method: 'GET',
+    headers: {
+      accept: 'text/plain',
+    },
+  });
+  t.equal(check3.status, 404, "Not found.");
+
+  let check4 = exists(client, `${internalRootFilepath}bar%2Ffoo$.txt`);
+  await t.doesNotReject(check4, NotFoundHttpError, "Exists.");
 });
-// it(
-//   'prevents accessing a document via a different identifier that results in the same path after URL decoding.',
-//   async(): Promise<void> => {
 
-//     // Next, put a resource using a path with an encoded separator character: bar%2Ffoo
-//     await fetch(`${baseUrl}bar%2Ffoo`, {
-//       method: 'PUT',
-//       headers: {
-//         'content-type': 'text/plain',
-//       },
-//       body: 'abc',
-//     });
+test('supports content types for which no extension mapping can be found (and falls back to using .unknown).', async (t: Test) => {
+  const url = `${baseUrl}test`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'unknown/some-type',
+    },
+    body: 'abc',
+  });
+  t.equal(res.status, 201, "Put.");
+  t.equal(res.headers.get('location'), `${baseUrl}test`);
 
-//     // The resource at bar%2Ffoo should not be accessible through bar/foo
-//     const check3 = await fetch(`${baseUrl}bar/foo`, {
-//       method: 'GET',
-//       headers: {
-//         accept: 'text/plain',
-//       },
-//     });
-//     // Expect bar/foo to correctly refer to a different document, which does not exist.
-//     expect(check3.status).toBe(404);
+  // Check if the document can be retrieved
+  const check1 = await fetch(`${baseUrl}test`, {
+    method: 'GET',
+    headers: {
+      accept: '*/*',
+    },
+  });
+  const body = await check1.text();
+  t.equal(check1.status, 200, "Success.");
+  t.equal(body, "abc", "Body.");
+  t.equal(check1.headers.get('content-type'), 'unknown/some-type', "Content-Type.");
 
-//     // Check that the the appropriate file path for bar%foo exists
-//     const check4 = await pathExists(`${rootFilePath}/bar%2Ffoo$.txt`);
-//     expect(check4).toBe(true);
-//   },
-// );
+  let check2 = exists(client, `${internalRootFilepath}test$.unknown`);
+  await t.doesNotReject(check2, NotFoundHttpError, "Exists.");
+});
+
 test("Stop Integration Tests.", async (t: Test) => {
   await app.stop();
   t.pass("Test Server Stopped.");
